@@ -10,39 +10,6 @@ import pickle
 import matplotlib.pyplot as plt
 
 
-# not as
-def net_attack_obsolete():
-    path = os.path.join(os.getcwd(), 'tmp/')
-    data = Dataset(root=path, name='cora')
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    adj, features, labels = data.adj, data.features, data.labels
-    idx_train, idx_val, idx_test = data.idx_train, data.idx_val, data.idx_test
-
-    model = GCN(nfeat=features.shape[1], nclass=labels.max() + 1, nhid=16, device=device)
-    model = model.to(device)
-    model.fit(features, adj, labels, idx_train)
-    model.eval()
-    output = model.test(idx_test)
-
-    surrogate = GCN(nfeat=features.shape[1], nclass=labels.max().item() + 1,
-                    nhid=16, dropout=0, with_relu=False, with_bias=False, device='cpu').to('cpu')
-    surrogate.fit(features, adj, labels, idx_train, idx_val, patience=30)
-    # Setup Attack Model
-    target_node = 10
-    model = Nettack(surrogate, nnodes=adj.shape[0], attack_structure=True, attack_features=True, device='cpu').to('cpu')
-    model = model.to(device)
-    # Attack
-    model.attack(features, adj, labels, target_node, n_perturbations=5)
-    modified_adj = model.modified_adj  # scipy sparse matrix
-    modified_features = model.modified_features  # scipy sparse matrix
-
-    model = GCN(nfeat=features.shape[1], nclass=labels.max() + 1, nhid=16, device=device)
-    model = model.to(device)
-    model.fit(modified_features, modified_adj, labels, idx_train)
-    model.eval()
-    output = model.test(idx_test)
-
-
 # as
 def net_attack():
     path = os.path.join(os.getcwd(), 'tmp/')
@@ -349,6 +316,39 @@ def defense_against_net():
 
     fig.tight_layout()
     plt.show()
+
+
+# not as
+def net_attack_obsolete():
+    path = os.path.join(os.getcwd(), 'tmp/')
+    data = Dataset(root=path, name='cora')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    adj, features, labels = data.adj, data.features, data.labels
+    idx_train, idx_val, idx_test = data.idx_train, data.idx_val, data.idx_test
+
+    model = GCN(nfeat=features.shape[1], nclass=labels.max() + 1, nhid=16, device=device)
+    model = model.to(device)
+    model.fit(features, adj, labels, idx_train)
+    model.eval()
+    output = model.test(idx_test)
+
+    surrogate = GCN(nfeat=features.shape[1], nclass=labels.max().item() + 1,
+                    nhid=16, dropout=0, with_relu=False, with_bias=False, device='cpu').to('cpu')
+    surrogate.fit(features, adj, labels, idx_train, idx_val, patience=30)
+    # Setup Attack Model
+    target_node = 10
+    model = Nettack(surrogate, nnodes=adj.shape[0], attack_structure=True, attack_features=True, device='cpu').to('cpu')
+    model = model.to(device)
+    # Attack
+    model.attack(features, adj, labels, target_node, n_perturbations=5)
+    modified_adj = model.modified_adj  # scipy sparse matrix
+    modified_features = model.modified_features  # scipy sparse matrix
+
+    model = GCN(nfeat=features.shape[1], nclass=labels.max() + 1, nhid=16, device=device)
+    model = model.to(device)
+    model.fit(modified_features, modified_adj, labels, idx_train)
+    model.eval()
+    output = model.test(idx_test)
 
 
 # region utils
